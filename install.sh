@@ -63,15 +63,22 @@ if [ -z "$DOWNLOAD_URL" ] || [ "$DOWNLOAD_URL" == "null" ]; then
     echo "Could not dynamically find Sunshine release for Ubuntu ${UBUNTU_VER}. Using fallback."
     if [ "$UBUNTU_VER" == "24.04" ]; then
         DOWNLOAD_URL="https://github.com/LizardByte/Sunshine/releases/download/v0.23.1/sunshine-ubuntu-24.04-amd64.deb"
+    elif [ "$UBUNTU_VER" == "20.04" ]; then
+        # Ubuntu 20.04 support was dropped in 0.23.0, so fallback to 0.22.2 for 20.04
+        DOWNLOAD_URL="https://github.com/LizardByte/Sunshine/releases/download/v0.22.2/sunshine-ubuntu-20.04-amd64.deb"
     else
         DOWNLOAD_URL="https://github.com/LizardByte/Sunshine/releases/download/v0.23.1/sunshine-ubuntu-22.04-amd64.deb"
     fi
 fi
 
 echo "Downloading Sunshine from $DOWNLOAD_URL"
-wget -qO /tmp/sunshine.deb "$DOWNLOAD_URL"
-apt-get install -y /tmp/sunshine.deb
-rm /tmp/sunshine.deb
+# Use a temporary directory to avoid "Permission denied" on /tmp/sunshine.deb
+# which happens due to fs.protected_regular if /tmp/sunshine.deb already exists
+# and is owned by a different user.
+TEMP_DIR=$(mktemp -d)
+wget -qO "$TEMP_DIR/sunshine.deb" "$DOWNLOAD_URL"
+apt-get install -y "$TEMP_DIR/sunshine.deb"
+rm -rf "$TEMP_DIR"
 
 # 7. Configure PulseAudio for headless
 mkdir -p $HOMEDIR/.config/pulse
