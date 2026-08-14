@@ -115,6 +115,13 @@ else
     rm -rf "$TEMP_DIR"
 fi
 
+# Mask the default systemd user service provided by the .deb to prevent port conflicts
+systemctl --global disable sunshine.service 2>/dev/null || true
+systemctl --global mask sunshine.service 2>/dev/null || true
+# Kill any currently running sunshine processes (from manual runs or user services)
+pkill -x sunshine || true
+sleep 1
+
 # 7. Configure PulseAudio for headless
 mkdir -p $HOMEDIR/.config/pulse
 cat <<EOF2 > $HOMEDIR/.config/pulse/default.pa
