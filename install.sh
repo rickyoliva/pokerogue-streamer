@@ -111,7 +111,7 @@ else
     # and is owned by a different user.
     TEMP_DIR=$(mktemp -d)
     wget -qO "$TEMP_DIR/sunshine.deb" "$DOWNLOAD_URL"
-    apt-get install -y "$TEMP_DIR/sunshine.deb"
+    apt-get install -y --allow-downgrades "$TEMP_DIR/sunshine.deb"
     rm -rf "$TEMP_DIR"
 fi
 
