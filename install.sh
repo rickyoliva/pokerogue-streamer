@@ -60,39 +60,60 @@ add-apt-repository -y universe
 add-apt-repository -y multiverse
 apt-get update
 
-# Note: we use chromium instead of chromium-browser in latest Ubuntu releases (usually a snap or dummy package that installs snap).
-# To avoid snap issues in systemd services, we might want to install an ungoogled-chromium or use chromium from apt.
-# Wait, apt install chromium-browser on 22.04/24.04 installs snap. Running snap apps via systemd user services can be tricky.
-# Let's stick to apt install chromium-browser and configure XDG_RUNTIME_DIR so it works.
-apt-get install -y xvfb openbox chromium-browser ufw curl wget jq pulseaudio dbus-x11
+# Check if dependencies are already installed to save time on updates
+deps_installed=true
+for pkg in xvfb openbox chromium-browser ufw curl wget jq pulseaudio dbus-x11; do
+    if ! dpkg -l | grep -q "^ii  $pkg "; then
+        deps_installed=false
+        break
+    fi
+done
+
+if [ "$deps_installed" = false ]; then
+    # Note: we use chromium instead of chromium-browser in latest Ubuntu releases (usually a snap or dummy package that installs snap).
+    # To avoid snap issues in systemd services, we might want to install an ungoogled-chromium or use chromium from apt.
+    # Wait, apt install chromium-browser on 22.04/24.04 installs snap. Running snap apps via systemd user services can be tricky.
+    # Let's stick to apt install chromium-browser and configure XDG_RUNTIME_DIR so it works.
+    apt-get install -y xvfb openbox chromium-browser ufw curl wget jq pulseaudio dbus-x11
+else
+    echo "Dependencies already installed. Skipping apt install."
+fi
 
 # 6. Install Sunshine
 UBUNTU_VER=$(lsb_release -rs)
 ARCH=$(dpkg --print-architecture)
 API_URL="https://api.github.com/repos/LizardByte/Sunshine/releases/latest"
 echo "Fetching latest Sunshine release for Ubuntu $UBUNTU_VER ($ARCH)..."
+LATEST_RELEASE=$(curl -s "$API_URL" | jq -r ".tag_name")
 DOWNLOAD_URL=$(curl -s "$API_URL" | jq -r ".assets[] | select(.name | contains(\"ubuntu-${UBUNTU_VER}-${ARCH}.deb\")) | .browser_download_url")
 
-if [ -z "$DOWNLOAD_URL" ] || [ "$DOWNLOAD_URL" == "null" ]; then
-    echo "Could not dynamically find Sunshine release for Ubuntu ${UBUNTU_VER}. Using fallback."
-    if [ "$UBUNTU_VER" == "24.04" ]; then
-        DOWNLOAD_URL="https://github.com/LizardByte/Sunshine/releases/download/v0.23.1/sunshine-ubuntu-24.04-${ARCH}.deb"
-    elif [ "$UBUNTU_VER" == "20.04" ]; then
-        # Ubuntu 20.04 support was dropped in 0.23.0, so fallback to 0.22.2 for 20.04
-        DOWNLOAD_URL="https://github.com/LizardByte/Sunshine/releases/download/v0.22.2/sunshine-ubuntu-20.04-${ARCH}.deb"
-    else
-        DOWNLOAD_URL="https://github.com/LizardByte/Sunshine/releases/download/v0.23.1/sunshine-ubuntu-22.04-${ARCH}.deb"
+CURRENT_SUNSHINE_VER=$(dpkg-query -W -f='${Version}' sunshine 2>/dev/null || echo "none")
+# If the latest release version is found in the current version, OR if they are an exact match (handling v prefix mismatch if any)
+if [[ "$CURRENT_SUNSHINE_VER" == *"${LATEST_RELEASE#v}"* ]] && [ "$CURRENT_SUNSHINE_VER" != "none" ] && [ -n "$LATEST_RELEASE" ] && [ "$LATEST_RELEASE" != "null" ]; then
+    echo "Sunshine is already at the latest version ($CURRENT_SUNSHINE_VER). Skipping download."
+else
+    if [ -z "$DOWNLOAD_URL" ] || [ "$DOWNLOAD_URL" == "null" ]; then
+        echo "Could not dynamically find Sunshine release for Ubuntu ${UBUNTU_VER}. Using fallback."
+        if [ "$UBUNTU_VER" == "24.04" ]; then
+            DOWNLOAD_URL="https://github.com/LizardByte/Sunshine/releases/download/v0.23.1/sunshine-ubuntu-24.04-${ARCH}.deb"
+        elif [ "$UBUNTU_VER" == "20.04" ]; then
+            # Ubuntu 20.04 support dropped in 0.23.0; use 0.23.1 if possible via focal build or stick to the last known stable avoiding 0.22.2 memory leak
+            # Let's use 0.21.0 to be safe since 0.22.2 has issues.
+            DOWNLOAD_URL="https://github.com/LizardByte/Sunshine/releases/download/v0.21.0/sunshine-ubuntu-20.04-${ARCH}.deb"
+        else
+            DOWNLOAD_URL="https://github.com/LizardByte/Sunshine/releases/download/v0.23.1/sunshine-ubuntu-22.04-${ARCH}.deb"
+        fi
     fi
-fi
 
-echo "Downloading Sunshine from $DOWNLOAD_URL"
-# Use a temporary directory to avoid "Permission denied" on /tmp/sunshine.deb
-# which happens due to fs.protected_regular if /tmp/sunshine.deb already exists
-# and is owned by a different user.
-TEMP_DIR=$(mktemp -d)
-wget -qO "$TEMP_DIR/sunshine.deb" "$DOWNLOAD_URL"
-apt-get install -y "$TEMP_DIR/sunshine.deb"
-rm -rf "$TEMP_DIR"
+    echo "Downloading Sunshine from $DOWNLOAD_URL"
+    # Use a temporary directory to avoid "Permission denied" on /tmp/sunshine.deb
+    # which happens due to fs.protected_regular if /tmp/sunshine.deb already exists
+    # and is owned by a different user.
+    TEMP_DIR=$(mktemp -d)
+    wget -qO "$TEMP_DIR/sunshine.deb" "$DOWNLOAD_URL"
+    apt-get install -y "$TEMP_DIR/sunshine.deb"
+    rm -rf "$TEMP_DIR"
+fi
 
 # 7. Configure PulseAudio for headless
 mkdir -p $HOMEDIR/.config/pulse
