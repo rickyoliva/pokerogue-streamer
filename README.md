@@ -39,6 +39,18 @@ curl -sSL <YOUR_INSTALL_SH_RAW_URL> | bash
 5. Navigate to the **PIN** tab and enter the 4 digits to pair.
 6. Launch **PokeRogue** from Moonlight and play!
 
+## Manual App Configuration
+
+If the "PokeRogue" application does not automatically appear in your Sunshine/Moonlight app list, you can add it manually via the Sunshine Web UI:
+
+1. Open the Sunshine Web UI (e.g., `https://<YOUR_VPS_IP>:47990`) in your browser and log in.
+2. Navigate to the **Applications** tab.
+3. Click **Add New**.
+4. In the **Application Name** field, enter: `PokeRogue`
+5. In the **Command** field, enter exactly: `/usr/local/bin/launch-pokerogue.sh`
+6. Click **Save** at the bottom.
+7. Disconnect and reconnect your Moonlight client; "PokeRogue" should now be available to launch.
+
 ## Troubleshooting
 
 - **Audio not working?** Try restarting the pulse service: `sudo systemctl restart pulseaudio-pokerogue`
