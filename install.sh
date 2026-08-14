@@ -8,8 +8,9 @@ echo "=========================================="
 
 # 1. Root check
 if [[ $EUID -ne 0 ]]; then
-   echo "This script must be run as root. Attempting to use sudo..."
-   exec sudo bash "$0" "$@"
+   echo "This script must be run as root."
+   echo "If you are running this via curl, try: curl -sSL <url> | sudo bash"
+   exit 1
 fi
 
 # 2. Get Public IP
@@ -46,6 +47,11 @@ UID_PR=$(id -u pokerogue)
 # 5. Update and install dependencies
 export DEBIAN_FRONTEND=noninteractive
 apt-get update
+apt-get install -y software-properties-common
+add-apt-repository -y universe
+add-apt-repository -y multiverse
+apt-get update
+
 # Note: we use chromium instead of chromium-browser in latest Ubuntu releases (usually a snap or dummy package that installs snap).
 # To avoid snap issues in systemd services, we might want to install an ungoogled-chromium or use chromium from apt.
 # Wait, apt install chromium-browser on 22.04/24.04 installs snap. Running snap apps via systemd user services can be tricky.
@@ -238,7 +244,7 @@ systemctl enable --now sunshine-pokerogue
 if [ -n "$SUN_USER" ] && [ -n "$SUN_PASS" ]; then
     echo "Setting Sunshine credentials..."
     systemctl stop sunshine-pokerogue
-    sudo -u pokerogue XDG_RUNTIME_DIR=/run/user/$UID_PR bash -c "sunshine $HOMEDIR/.config/sunshine/sunshine.conf --creds \"$SUN_USER\" \"$SUN_PASS\"" || true
+    sudo -u pokerogue XDG_RUNTIME_DIR=/run/user/$UID_PR sunshine $HOMEDIR/.config/sunshine/sunshine.conf --creds "$SUN_USER" "$SUN_PASS" || true
     systemctl start sunshine-pokerogue
 fi
 
