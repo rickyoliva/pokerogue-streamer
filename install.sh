@@ -122,6 +122,7 @@ encoder = software
 p2p_video_encoder = x264
 capture = x11
 audio_sink = pokerogue_sink
+file_apps = $HOMEDIR/.config/sunshine/apps.json
 EOF2
 
 cat <<EOF2 > $HOMEDIR/.config/sunshine/apps.json
