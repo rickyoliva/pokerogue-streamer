@@ -60,20 +60,20 @@ apt-get install -y xvfb openbox chromium-browser ufw curl wget jq pulseaudio dbu
 
 # 6. Install Sunshine
 UBUNTU_VER=$(lsb_release -rs)
-ARCH="amd64"
+ARCH=$(dpkg --print-architecture)
 API_URL="https://api.github.com/repos/LizardByte/Sunshine/releases/latest"
-echo "Fetching latest Sunshine release for Ubuntu $UBUNTU_VER..."
+echo "Fetching latest Sunshine release for Ubuntu $UBUNTU_VER ($ARCH)..."
 DOWNLOAD_URL=$(curl -s "$API_URL" | jq -r ".assets[] | select(.name | contains(\"ubuntu-${UBUNTU_VER}-${ARCH}.deb\")) | .browser_download_url")
 
 if [ -z "$DOWNLOAD_URL" ] || [ "$DOWNLOAD_URL" == "null" ]; then
     echo "Could not dynamically find Sunshine release for Ubuntu ${UBUNTU_VER}. Using fallback."
     if [ "$UBUNTU_VER" == "24.04" ]; then
-        DOWNLOAD_URL="https://github.com/LizardByte/Sunshine/releases/download/v0.23.1/sunshine-ubuntu-24.04-amd64.deb"
+        DOWNLOAD_URL="https://github.com/LizardByte/Sunshine/releases/download/v0.23.1/sunshine-ubuntu-24.04-${ARCH}.deb"
     elif [ "$UBUNTU_VER" == "20.04" ]; then
         # Ubuntu 20.04 support was dropped in 0.23.0, so fallback to 0.22.2 for 20.04
-        DOWNLOAD_URL="https://github.com/LizardByte/Sunshine/releases/download/v0.22.2/sunshine-ubuntu-20.04-amd64.deb"
+        DOWNLOAD_URL="https://github.com/LizardByte/Sunshine/releases/download/v0.22.2/sunshine-ubuntu-20.04-${ARCH}.deb"
     else
-        DOWNLOAD_URL="https://github.com/LizardByte/Sunshine/releases/download/v0.23.1/sunshine-ubuntu-22.04-amd64.deb"
+        DOWNLOAD_URL="https://github.com/LizardByte/Sunshine/releases/download/v0.23.1/sunshine-ubuntu-22.04-${ARCH}.deb"
     fi
 fi
 
