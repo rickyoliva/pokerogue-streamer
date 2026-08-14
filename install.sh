@@ -39,8 +39,16 @@ sleep 3
 # 4. Create User
 if ! id -u pokerogue >/dev/null 2>&1; then
     useradd -m -s /bin/bash pokerogue
-    usermod -a -G video,audio pokerogue
 fi
+# Ensure the user has the required groups (even if created previously)
+# input: for /dev/uinput controller creation
+# render: for hardware acceleration
+usermod -a -G video,audio,input,render pokerogue || true
+
+# Add udev rules so the 'input' group can access /dev/uinput
+echo 'KERNEL=="uinput", SUBSYSTEM=="misc", OPTIONS+="static_node=uinput", TAG+="uaccess", GROUP="input", MODE="0660"' > /etc/udev/rules.d/99-sunshine-input.rules
+udevadm control --reload-rules || true
+udevadm trigger || true
 HOMEDIR=$(eval echo "~pokerogue")
 UID_PR=$(id -u pokerogue)
 
@@ -113,7 +121,6 @@ sunshine_name = PokeRogue-Server
 encoder = software
 p2p_video_encoder = x264
 capture = x11
-display = :99
 audio_sink = pokerogue_sink
 EOF2
 
