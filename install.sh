@@ -36,21 +36,31 @@ echo "=========================================="
 echo "Starting installation in 3 seconds..."
 sleep 3
 
-# 4. Create User
-if ! id -u pokerogue >/dev/null 2>&1; then
-    useradd -m -s /bin/bash pokerogue
+# 4. Resolve target user (the user who invoked sudo, or current user)
+TARGET_USER="${SUDO_USER:-$USER}"
+if [ -z "$TARGET_USER" ] || ! id -u "$TARGET_USER" >/dev/null 2>&1; then
+    echo "Could not determine a valid target user."
+    exit 1
 fi
-# Ensure the user has the required groups (even if created previously)
+if [ "$TARGET_USER" = "root" ]; then
+    echo "Warning: target user resolved to root. Running services as root is not recommended."
+fi
+
+# Ensure the user has the required groups
 # input: for /dev/uinput controller creation
 # render: for hardware acceleration
-usermod -a -G video,audio,input,render pokerogue || true
+usermod -a -G video,audio,input,render "$TARGET_USER" || true
 
 # Add udev rules so the 'input' group can access /dev/uinput
 echo 'KERNEL=="uinput", SUBSYSTEM=="misc", OPTIONS+="static_node=uinput", TAG+="uaccess", GROUP="input", MODE="0660"' > /etc/udev/rules.d/99-sunshine-input.rules
 udevadm control --reload-rules || true
 udevadm trigger || true
-HOMEDIR=$(eval echo "~pokerogue")
-UID_PR=$(id -u pokerogue)
+HOMEDIR=$(getent passwd "$TARGET_USER" | cut -d: -f6)
+UID_PR=$(id -u "$TARGET_USER")
+if [ -z "$HOMEDIR" ]; then
+    echo "Could not resolve home directory for user '$TARGET_USER'."
+    exit 1
+fi
 
 # 5. Update and install dependencies
 export DEBIAN_FRONTEND=noninteractive
@@ -129,7 +139,7 @@ cat <<EOF2 > $HOMEDIR/.config/pulse/default.pa
 load-module module-null-sink sink_name=pokerogue_sink sink_properties=device.description="PokeRogueSink"
 set-default-sink pokerogue_sink
 EOF2
-chown -R pokerogue:pokerogue $HOMEDIR/.config
+chown -R "$TARGET_USER:$TARGET_USER" "$HOMEDIR/.config"
 
 # 8. PokeRogue Launcher
 cat <<EOF2 > /usr/local/bin/launch-pokerogue.sh
@@ -180,10 +190,10 @@ cat <<EOF2 > $HOMEDIR/.config/sunshine/apps.json
   ]
 }
 EOF2
-chown -R pokerogue:pokerogue $HOMEDIR/.config/sunshine
+chown -R "$TARGET_USER:$TARGET_USER" "$HOMEDIR/.config/sunshine"
 
 # 10. Systemd Services
-# Create the runtime directory service for pokerogue
+# Create the runtime directory service
 cat <<EOF2 > /etc/systemd/system/pokerogue-runtime.service
 [Unit]
 Description=Runtime directory for PokeRogue
@@ -191,7 +201,7 @@ Description=Runtime directory for PokeRogue
 [Service]
 Type=oneshot
 ExecStart=/bin/mkdir -p /run/user/$UID_PR
-ExecStart=/bin/chown pokerogue:pokerogue /run/user/$UID_PR
+ExecStart=/bin/chown $TARGET_USER:$TARGET_USER /run/user/$UID_PR
 ExecStart=/bin/chmod 700 /run/user/$UID_PR
 RemainAfterExit=yes
 
@@ -206,7 +216,7 @@ Description=Xvfb Display for PokeRogue
 After=network.target
 
 [Service]
-User=pokerogue
+User=$TARGET_USER
 ExecStart=/usr/bin/Xvfb :99 -screen 0 ${RES}x24
 Restart=always
 
@@ -222,7 +232,7 @@ After=pokerogue-runtime.service network.target
 Requires=pokerogue-runtime.service
 
 [Service]
-User=pokerogue
+User=$TARGET_USER
 Environment=HOME=$HOMEDIR
 Environment=XDG_RUNTIME_DIR=/run/user/$UID_PR
 ExecStart=/usr/bin/pulseaudio --daemonize=no
@@ -240,7 +250,7 @@ After=xvfb-pokerogue.service
 Requires=xvfb-pokerogue.service
 
 [Service]
-User=pokerogue
+User=$TARGET_USER
 Environment=DISPLAY=:99
 ExecStart=/usr/bin/openbox
 Restart=always
@@ -257,7 +267,7 @@ After=xvfb-pokerogue.service pulseaudio-pokerogue.service network-online.target
 Requires=xvfb-pokerogue.service pulseaudio-pokerogue.service
 
 [Service]
-User=pokerogue
+User=$TARGET_USER
 Environment=DISPLAY=:99
 Environment=HOME=$HOMEDIR
 Environment=XDG_RUNTIME_DIR=/run/user/$UID_PR
@@ -280,7 +290,7 @@ systemctl enable --now sunshine-pokerogue
 if [ -n "$SUN_USER" ] && [ -n "$SUN_PASS" ]; then
     echo "Setting Sunshine credentials..."
     systemctl stop sunshine-pokerogue
-    sudo -u pokerogue XDG_RUNTIME_DIR=/run/user/$UID_PR sunshine $HOMEDIR/.config/sunshine/sunshine.conf --creds "$SUN_USER" "$SUN_PASS" || true
+    sudo -u "$TARGET_USER" XDG_RUNTIME_DIR=/run/user/$UID_PR sunshine "$HOMEDIR/.config/sunshine/sunshine.conf" --creds "$SUN_USER" "$SUN_PASS" || true
     systemctl start sunshine-pokerogue
 fi
 
