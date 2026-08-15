@@ -22,7 +22,7 @@ curl -sSL <YOUR_INSTALL_SH_RAW_URL> | bash
 
 ## What the Installer Does
 
-1. **User Setup**: Creates a secure, non-root user (`pokerogue`) to run all the necessary services, enhancing the security of your server.
+1. **User Setup**: Uses the invoking user (the user that ran the installer with sudo) to run all required services.
 2. **System Dependencies**: Installs the required packages like `Xvfb` (headless display), `Openbox` (window manager), `Chromium`, `PulseAudio`, and more.
 3. **Sunshine Installation**: Dynamically fetches and installs the latest stable version of Sunshine.
 4. **Headless Audio**: Sets up a virtual PulseAudio sink to stream high-quality PokeRogue audio directly to your device.

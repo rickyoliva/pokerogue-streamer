@@ -13,12 +13,17 @@ if [[ $EUID -ne 0 ]]; then
    exit 1
 fi
 
-if ! id -u pokerogue >/dev/null 2>&1; then
-    echo "User 'pokerogue' not found. It seems the installation has not been run."
+TARGET_USER="${SUDO_USER:-$USER}"
+if [ -z "$TARGET_USER" ] || ! id -u "$TARGET_USER" >/dev/null 2>&1; then
+    echo "Could not determine a valid target user."
     exit 1
 fi
 
-HOMEDIR=$(eval echo "~pokerogue")
+HOMEDIR=$(getent passwd "$TARGET_USER" | cut -d: -f6)
+if [ -z "$HOMEDIR" ]; then
+    echo "Could not resolve home directory for user '$TARGET_USER'."
+    exit 1
+fi
 SUNSHINE_CONF="$HOMEDIR/.config/sunshine/sunshine.conf"
 APPS_JSON="$HOMEDIR/.config/sunshine/apps.json"
 
@@ -41,7 +46,7 @@ capture = x11
 audio_sink = pokerogue_sink
 file_apps = $APPS_JSON
 EOF2
-    chown -R pokerogue:pokerogue "$HOMEDIR/.config/sunshine"
+    chown -R "$TARGET_USER:$TARGET_USER" "$HOMEDIR/.config/sunshine"
 fi
 
 echo "Ensuring apps.json is correctly configured..."
@@ -73,7 +78,7 @@ cat <<EOF2 > "$APPS_JSON"
   ]
 }
 EOF2
-chown -R pokerogue:pokerogue "$HOMEDIR/.config/sunshine"
+chown -R "$TARGET_USER:$TARGET_USER" "$HOMEDIR/.config/sunshine"
 
 echo "Restarting sunshine-pokerogue service..."
 systemctl restart sunshine-pokerogue || echo "Warning: Failed to restart sunshine-pokerogue. It may not be running yet."
