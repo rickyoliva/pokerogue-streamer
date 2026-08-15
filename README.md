@@ -15,17 +15,49 @@ It is specifically designed to stream smoothly to Moonlight clients, such as the
 To automatically download and run the installer on your VPS, execute the following command in your terminal:
 
 ```bash
-curl -sSL <YOUR_INSTALL_SH_RAW_URL> | bash
+curl -sSL https://raw.githubusercontent.com/rickyoliva/pokerogue-streamer/main/install.sh | sudo bash
 ```
 
-*(Note: Replace `<YOUR_INSTALL_SH_RAW_URL>` with the raw URL to the `install.sh` file from your repository, such as `https://raw.githubusercontent.com/<user>/<repo>/main/install.sh`.)*
+## Run Any Script via cURL
+
+Use these commands to run each script directly from this repository:
+
+### `install.sh`
+
+```bash
+curl -sSL https://raw.githubusercontent.com/rickyoliva/pokerogue-streamer/main/install.sh | sudo bash
+```
+
+### `uninstall.sh`
+
+```bash
+curl -sSL https://raw.githubusercontent.com/rickyoliva/pokerogue-streamer/main/uninstall.sh | sudo bash -s -- --all
+```
+
+### `add-pokerogue-app.sh`
+
+```bash
+curl -sSL https://raw.githubusercontent.com/rickyoliva/pokerogue-streamer/main/add-pokerogue-app.sh | sudo bash
+```
+
+### `debug-pokerogue.sh`
+
+```bash
+curl -sSL https://raw.githubusercontent.com/rickyoliva/pokerogue-streamer/main/debug-pokerogue.sh | sudo bash
+```
+
+### `test_deps.sh`
+
+```bash
+curl -sSL https://raw.githubusercontent.com/rickyoliva/pokerogue-streamer/main/test_deps.sh | bash
+```
 
 ## Uninstall Options
 
 Use `uninstall.sh` to cleanly remove parts of the setup during beta testing or clean reinstalls.
 
 ```bash
-sudo bash uninstall.sh [options]
+curl -sSL https://raw.githubusercontent.com/rickyoliva/pokerogue-streamer/main/uninstall.sh | sudo bash -s -- [options]
 ```
 
 Options:
