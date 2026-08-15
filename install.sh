@@ -17,14 +17,31 @@ fi
 PUBLIC_IP=$(curl -s ifconfig.me || curl -s icanhazip.com || echo "UNKNOWN_IP")
 
 # 3. Interactive Prompts
-read -p "Enter target resolution (default: 640x480): " RES_INPUT
-RES=${RES_INPUT:-640x480}
+PROMPT_FD=0
+if [ ! -t 0 ]; then
+    if [ -r /dev/tty ]; then
+        exec 3</dev/tty
+        PROMPT_FD=3
+    else
+        PROMPT_FD=-1
+    fi
+fi
 
-echo "Sunshine Web UI Credentials"
-read -p "Enter Sunshine Admin Username (leave blank to skip): " SUN_USER
-if [ -n "$SUN_USER" ]; then
-    read -s -p "Enter Sunshine Admin Password: " SUN_PASS
-    echo
+if [ "$PROMPT_FD" -eq -1 ]; then
+    echo "No interactive terminal detected. Using defaults and skipping Sunshine credentials prompt."
+    RES="640x480"
+    SUN_USER=""
+    SUN_PASS=""
+else
+    read -r -u "$PROMPT_FD" -p "Enter target resolution (default: 640x480): " RES_INPUT
+    RES=${RES_INPUT:-640x480}
+
+    echo "Sunshine Web UI Credentials"
+    read -r -u "$PROMPT_FD" -p "Enter Sunshine Admin Username (leave blank to skip): " SUN_USER
+    if [ -n "$SUN_USER" ]; then
+        read -r -s -u "$PROMPT_FD" -p "Enter Sunshine Admin Password: " SUN_PASS
+        echo
+    fi
 fi
 
 echo "=========================================="
