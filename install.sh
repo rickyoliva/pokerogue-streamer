@@ -27,15 +27,13 @@ if [ ! -t 0 ]; then
     fi
 fi
 
+RES="640x480"
+
 if [ "$PROMPT_FD" -eq -1 ]; then
-    echo "No interactive terminal detected. Using defaults and skipping Sunshine credentials prompt."
-    RES="640x480"
+    echo "No interactive terminal detected. Skipping Sunshine credentials prompt."
     SUN_USER=""
     SUN_PASS=""
 else
-    read -r -u "$PROMPT_FD" -p "Enter target resolution (default: 640x480): " RES_INPUT
-    RES=${RES_INPUT:-640x480}
-
     echo "Sunshine Web UI Credentials"
     read -r -u "$PROMPT_FD" -p "Enter Sunshine Admin Username (leave blank to skip): " SUN_USER
     if [ -n "$SUN_USER" ]; then
