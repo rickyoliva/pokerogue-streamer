@@ -20,6 +20,21 @@ curl -sSL <YOUR_INSTALL_SH_RAW_URL> | bash
 
 *(Note: Replace `<YOUR_INSTALL_SH_RAW_URL>` with the raw URL to the `install.sh` file from your repository, such as `https://raw.githubusercontent.com/<user>/<repo>/main/install.sh`.)*
 
+## Uninstall Options
+
+Use `uninstall.sh` to cleanly remove parts of the setup during beta testing or clean reinstalls.
+
+```bash
+sudo bash uninstall.sh [options]
+```
+
+Options:
+- `-s, --sunshine`: uninstall Sunshine
+- `-d, --dependencies`: uninstall dependencies installed by `install.sh`
+- `-u, --remove-old-user`: remove legacy `pokerogue` user from older installers
+- `-a, --all`: run all uninstall actions
+- `-y, --yes`: skip confirmation prompt
+
 ## What the Installer Does
 
 1. **User Setup**: Uses the invoking user (the user that ran the installer with sudo) to run all required services.
