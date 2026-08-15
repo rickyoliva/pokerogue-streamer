@@ -1,11 +1,6 @@
 #!/usr/bin/env bash
 set -e
 
-if [[ $EUID -ne 0 ]]; then
-  echo "This script must be run as root."
-  exit 1
-fi
-
 UNINSTALL_SUNSHINE=false
 UNINSTALL_DEPS=false
 REMOVE_OLD_USER=false
@@ -64,6 +59,11 @@ done
 if [[ "$UNINSTALL_SUNSHINE" = false && "$UNINSTALL_DEPS" = false && "$REMOVE_OLD_USER" = false ]]; then
   echo "No uninstall action selected."
   usage
+  exit 1
+fi
+
+if [[ $EUID -ne 0 ]]; then
+  echo "This script must be run as root."
   exit 1
 fi
 
