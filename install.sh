@@ -77,6 +77,10 @@ if [ -z "$HOMEDIR" ]; then
     exit 1
 fi
 
+# Stop any default xvfb service that might be respawning and causing conflicts
+systemctl stop xvfb.service 2>/dev/null || true
+systemctl disable xvfb.service 2>/dev/null || true
+
 # Kill rogue processes from previous or failed installations
 echo "Killing any existing rogue processes to free up ports..."
 killall -9 Xvfb pulseaudio openbox sunshine chromium-browser 2>/dev/null || true
