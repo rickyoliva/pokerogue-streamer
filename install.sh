@@ -79,11 +79,12 @@ fi
 
 # Kill rogue processes from previous or failed installations
 echo "Killing any existing rogue processes to free up ports..."
-pkill -f "Xvfb :99" || true
-pkill -x pulseaudio || true
-pkill -x openbox || true
-pkill -x sunshine || true
-pkill -x chromium-browser || true
+killall -9 Xvfb pulseaudio openbox sunshine chromium-browser 2>/dev/null || true
+pkill -9 -x Xvfb || true
+pkill -9 -x pulseaudio || true
+pkill -9 -x openbox || true
+pkill -9 -x sunshine || true
+pkill -9 -x chromium-browser || true
 sleep 1
 
 # 5. Update and install dependencies
@@ -144,7 +145,9 @@ else
     # which happens due to fs.protected_regular if /tmp/sunshine.deb already exists
     # and is owned by a different user.
     TEMP_DIR=$(mktemp -d)
+    chmod 755 "$TEMP_DIR" # Allow _apt user to access the deb file
     wget -qO "$TEMP_DIR/sunshine.deb" "$DOWNLOAD_URL"
+    chmod 644 "$TEMP_DIR/sunshine.deb"
     apt-get install -y --allow-downgrades "$TEMP_DIR/sunshine.deb"
     rm -rf "$TEMP_DIR"
 fi
