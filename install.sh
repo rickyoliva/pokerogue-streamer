@@ -83,12 +83,14 @@ systemctl disable xvfb.service 2>/dev/null || true
 
 # Kill rogue processes from previous or failed installations
 echo "Killing any existing rogue processes to free up ports..."
-killall -9 Xvfb pulseaudio openbox sunshine chromium-browser 2>/dev/null || true
+killall -9 Xvfb pulseaudio openbox sunshine chromium-browser google-chrome-stable chrome 2>/dev/null || true
 pkill -9 -x Xvfb || true
 pkill -9 -x pulseaudio || true
 pkill -9 -x openbox || true
 pkill -9 -x sunshine || true
 pkill -9 -x chromium-browser || true
+pkill -9 -x google-chrome-stable || true
+pkill -9 -x chrome || true
 sleep 1
 
 # Clean up lock files left behind by forceful termination
@@ -103,9 +105,29 @@ add-apt-repository -y universe
 add-apt-repository -y multiverse
 apt-get update
 
+# Determine which browser to install based on architecture
+ARCH=$(dpkg --print-architecture)
+if [ "$ARCH" = "amd64" ]; then
+    BROWSER_PKG="google-chrome-stable"
+    BROWSER_EXEC="google-chrome-stable"
+else
+    # For arm64, use chromium from a PPA to avoid the snap package
+    BROWSER_PKG="chromium"
+    BROWSER_EXEC="chromium"
+fi
+
+# Make sure we clean up the old snap wrapper if it exists before proceeding
+if dpkg -l | grep -q "^ii  chromium-browser "; then
+    echo "Removing existing snap-based chromium-browser..."
+    apt-get remove --purge -y chromium-browser || true
+    if command -v snap >/dev/null 2>&1; then
+        snap remove chromium || true
+    fi
+fi
+
 # Check if dependencies are already installed to save time on updates
 deps_installed=true
-for pkg in xvfb openbox chromium-browser ufw curl wget jq pulseaudio dbus-x11; do
+for pkg in xvfb openbox $BROWSER_PKG ufw curl wget jq pulseaudio dbus-x11; do
     if ! dpkg -l | grep -q "^ii  $pkg "; then
         deps_installed=false
         break
@@ -113,11 +135,18 @@ for pkg in xvfb openbox chromium-browser ufw curl wget jq pulseaudio dbus-x11; d
 done
 
 if [ "$deps_installed" = false ]; then
-    # Note: we use chromium instead of chromium-browser in latest Ubuntu releases (usually a snap or dummy package that installs snap).
-    # To avoid snap issues in systemd services, we might want to install an ungoogled-chromium or use chromium from apt.
-    # Wait, apt install chromium-browser on 22.04/24.04 installs snap. Running snap apps via systemd user services can be tricky.
-    # Let's stick to apt install chromium-browser and configure XDG_RUNTIME_DIR so it works.
-    apt-get install -y xvfb openbox chromium-browser ufw curl wget jq pulseaudio dbus-x11
+    if [ "$BROWSER_PKG" = "google-chrome-stable" ]; then
+        if ! dpkg -l | grep -q "^ii  google-chrome-stable "; then
+            curl -fsSL https://dl.google.com/linux/linux_signing_key.pub | gpg --dearmor --yes -o /usr/share/keyrings/google-chrome.gpg
+            echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] http://dl.google.com/linux/chrome/deb/ stable main" | tee /etc/apt/sources.list.d/google-chrome.list
+            apt-get update
+        fi
+    else
+        # Adding a common PPA for chromium to avoid the snap wrapper on arm64
+        add-apt-repository -y ppa:xtradeb/apps || true
+        apt-get update
+    fi
+    apt-get install -y xvfb openbox $BROWSER_PKG ufw curl wget jq pulseaudio dbus-x11
 else
     echo "Dependencies already installed. Skipping apt install."
 fi
@@ -182,8 +211,8 @@ cat <<EOF2 > /usr/local/bin/launch-pokerogue.sh
 export DISPLAY=:99
 export XDG_RUNTIME_DIR=/run/user/$UID_PR
 export PULSE_SERVER=unix:/run/user/$UID_PR/pulse/native
-# Start Chromium
-exec chromium-browser --kiosk --window-size=${RES/x/,} --window-position=0,0 --no-first-run --disable-restore-session-state "https://pokerogue.net/"
+# Start Browser
+exec ${BROWSER_EXEC} --kiosk --window-size=${RES/x/,} --window-position=0,0 --no-first-run --disable-restore-session-state --disable-dev-shm-usage "https://pokerogue.net/"
 EOF2
 chmod +x /usr/local/bin/launch-pokerogue.sh
 

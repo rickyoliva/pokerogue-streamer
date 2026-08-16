@@ -103,12 +103,15 @@ remove_project_runtime() {
   systemctl disable xvfb.service 2>/dev/null || true
 
   # Kill any lingering rogue processes
-  killall -9 Xvfb pulseaudio openbox sunshine chromium-browser 2>/dev/null || true
+  killall -9 Xvfb pulseaudio openbox sunshine chromium chromium-browser google-chrome-stable chrome 2>/dev/null || true
   pkill -9 -x Xvfb || true
   pkill -9 -x pulseaudio || true
   pkill -9 -x openbox || true
   pkill -9 -x sunshine || true
   pkill -9 -x chromium-browser || true
+  pkill -9 -x chromium || true
+  pkill -9 -x google-chrome-stable || true
+  pkill -9 -x chrome || true
 
   # Clean up lock files left behind by forceful termination
   rm -f /tmp/.X99-lock
@@ -144,7 +147,7 @@ fi
 if [[ "$UNINSTALL_DEPS" = true ]]; then
   echo "Removing installer dependencies..."
   # Purposely omit ufw, curl, wget, and software-properties-common so we don't break the base system tools
-  apt-get remove --purge -y xvfb openbox chromium-browser jq pulseaudio dbus-x11 || true
+  apt-get remove --purge -y xvfb openbox chromium chromium-browser google-chrome-stable jq pulseaudio dbus-x11 || true
   apt-get autoremove -y
 fi
 
