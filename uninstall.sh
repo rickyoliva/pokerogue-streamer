@@ -98,6 +98,10 @@ remove_project_runtime() {
   remove_systemd_unit "sunshine-pokerogue"
   systemctl daemon-reload
 
+  # Stop global xvfb service if it exists
+  systemctl stop xvfb.service 2>/dev/null || true
+  systemctl disable xvfb.service 2>/dev/null || true
+
   # Kill any lingering rogue processes
   killall -9 Xvfb pulseaudio openbox sunshine chromium-browser 2>/dev/null || true
   pkill -9 -x Xvfb || true
@@ -139,7 +143,8 @@ fi
 
 if [[ "$UNINSTALL_DEPS" = true ]]; then
   echo "Removing installer dependencies..."
-  apt-get remove --purge -y xvfb openbox chromium-browser ufw curl wget jq pulseaudio dbus-x11 software-properties-common || true
+  # Purposely omit ufw, curl, wget, and software-properties-common so we don't break the base system tools
+  apt-get remove --purge -y xvfb openbox chromium-browser jq pulseaudio dbus-x11 || true
   apt-get autoremove -y
 fi
 
