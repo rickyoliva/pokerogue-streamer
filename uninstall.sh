@@ -99,11 +99,12 @@ remove_project_runtime() {
   systemctl daemon-reload
 
   # Kill any lingering rogue processes
-  pkill -f "Xvfb :99" || true
-  pkill -x pulseaudio || true
-  pkill -x openbox || true
-  pkill -x sunshine || true
-  pkill -x chromium-browser || true
+  killall -9 Xvfb pulseaudio openbox sunshine chromium-browser 2>/dev/null || true
+  pkill -9 -x Xvfb || true
+  pkill -9 -x pulseaudio || true
+  pkill -9 -x openbox || true
+  pkill -9 -x sunshine || true
+  pkill -9 -x chromium-browser || true
 
   rm -f /usr/local/bin/launch-pokerogue.sh
   rm -f /etc/udev/rules.d/99-sunshine-input.rules
