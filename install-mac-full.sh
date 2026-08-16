@@ -238,7 +238,11 @@ main() {
   ensure_formula shellcheck
 
   # Browser + streaming host
-  ensure_cask google-chrome
+  if [[ -d "/Applications/Google Chrome.app" ]] || [[ -d "$HOME/Applications/Google Chrome.app" ]]; then
+    echo "✓ google-chrome already installed (app bundle exists)"
+  else
+    ensure_cask google-chrome
+  fi
   ensure_cask sunshine
 
   # Optional Chromium fallback
