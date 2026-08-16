@@ -77,6 +77,15 @@ if [ -z "$HOMEDIR" ]; then
     exit 1
 fi
 
+# Kill rogue processes from previous or failed installations
+echo "Killing any existing rogue processes to free up ports..."
+pkill -f "Xvfb :99" || true
+pkill -x pulseaudio || true
+pkill -x openbox || true
+pkill -x sunshine || true
+pkill -x chromium-browser || true
+sleep 1
+
 # 5. Update and install dependencies
 export DEBIAN_FRONTEND=noninteractive
 apt-get update
