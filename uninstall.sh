@@ -106,6 +106,10 @@ remove_project_runtime() {
   pkill -9 -x sunshine || true
   pkill -9 -x chromium-browser || true
 
+  # Clean up lock files left behind by forceful termination
+  rm -f /tmp/.X99-lock
+  rm -f /tmp/.X11-unix/X99
+
   rm -f /usr/local/bin/launch-pokerogue.sh
   rm -f /etc/udev/rules.d/99-sunshine-input.rules
   udevadm control --reload-rules 2>/dev/null || true
