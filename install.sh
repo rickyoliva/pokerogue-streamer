@@ -111,9 +111,10 @@ if [ "$ARCH" = "amd64" ]; then
     BROWSER_PKG="google-chrome-stable"
     BROWSER_EXEC="google-chrome-stable"
 else
-    # For arm64, use chromium from a PPA to avoid the snap package
-    BROWSER_PKG="chromium"
-    BROWSER_EXEC="chromium"
+    # For arm64, use chromium-browser from a PPA to avoid the snap package
+    # We will use firefox for arm64 instead since chromium non-snap is hard to find reliably.
+    BROWSER_PKG="firefox"
+    BROWSER_EXEC="firefox"
 fi
 
 # Make sure we clean up the old snap wrapper if it exists before proceeding
@@ -142,8 +143,20 @@ if [ "$deps_installed" = false ]; then
             apt-get update
         fi
     else
-        # Adding a common PPA for chromium to avoid the snap wrapper on arm64
-        add-apt-repository -y ppa:xtradeb/apps || true
+        # For arm64 we are using firefox instead of chromium.
+        # Ubuntu 22.04+ also snaps firefox, so we need to add the mozilla PPA
+        add-apt-repository -y ppa:mozillateam/ppa || true
+
+        # Prevent snapd from taking over firefox package
+        cat <<EOF3 > /etc/apt/preferences.d/mozilla-firefox
+Package: firefox*
+Pin: release o=LP-PPA-mozillateam
+Pin-Priority: 1001
+
+Package: firefox*
+Pin: release o=Ubuntu
+Pin-Priority: -1
+EOF3
         apt-get update
     fi
     apt-get install -y xvfb openbox $BROWSER_PKG ufw curl wget jq pulseaudio dbus-x11
@@ -211,8 +224,15 @@ cat <<EOF2 > /usr/local/bin/launch-pokerogue.sh
 export DISPLAY=:99
 export XDG_RUNTIME_DIR=/run/user/$UID_PR
 export PULSE_SERVER=unix:/run/user/$UID_PR/pulse/native
+
 # Start Browser
-exec ${BROWSER_EXEC} --kiosk --window-size=${RES/x/,} --window-position=0,0 --no-first-run --disable-restore-session-state --disable-dev-shm-usage "https://pokerogue.net/"
+if [ "${BROWSER_EXEC}" = "firefox" ]; then
+    # Firefox requires different flags and syntax for dimensions
+    exec firefox -kiosk -width \$(echo "${RES}" | cut -d'x' -f1) -height \$(echo "${RES}" | cut -d'x' -f2) "https://pokerogue.net/"
+else
+    # Chrome/Chromium flags
+    exec ${BROWSER_EXEC} --kiosk --window-size=${RES/x/,} --window-position=0,0 --no-first-run --disable-restore-session-state --disable-dev-shm-usage "https://pokerogue.net/"
+fi
 EOF2
 chmod +x /usr/local/bin/launch-pokerogue.sh
 
