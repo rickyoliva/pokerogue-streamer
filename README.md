@@ -10,7 +10,24 @@ It is specifically designed to stream smoothly to Moonlight clients, such as the
 - Internet access
 - Root or sudo privileges
 
-## Quick Install
+## macOS Bootstrap (Local Tools)
+
+If you are on macOS and want to prepare local tooling for this repository (without attempting the Ubuntu/server setup), run:
+
+```bash
+curl -sSL https://raw.githubusercontent.com/rickyoliva/pokerogue-streamer/main/install-mac.sh | bash
+```
+
+Or clone and run locally:
+
+```bash
+chmod +x install-mac.sh
+./install-mac.sh
+```
+
+> Note: The full headless streaming deployment (`install.sh`) is **Ubuntu-only** and uses `apt` + `systemd`.
+
+## Quick Install (Ubuntu VPS)
 
 To automatically download and run the installer on your VPS, execute the following command in your terminal:
 
@@ -26,6 +43,12 @@ Use these commands to run each script directly from this repository:
 
 ```bash
 curl -sSL https://raw.githubusercontent.com/rickyoliva/pokerogue-streamer/main/install.sh | sudo bash
+```
+
+### `install-mac.sh`
+
+```bash
+curl -sSL https://raw.githubusercontent.com/rickyoliva/pokerogue-streamer/main/install-mac.sh | bash
 ```
 
 ### `uninstall.sh`
