@@ -76,6 +76,49 @@ ensure_cask() {
   fi
 }
 
+install_sunshine_mac() {
+  if [[ -d "/Applications/Sunshine.app" ]] || [[ -d "$HOME/Applications/Sunshine.app" ]]; then
+    echo "✓ sunshine already installed (app bundle exists)"
+    return
+  fi
+
+  echo "Installing sunshine from GitHub releases..."
+  local arch
+  arch=$(uname -m)
+  if [[ "$arch" == "arm64" ]]; then
+    local dmg_url
+    dmg_url=$(curl -s "https://api.github.com/repos/LizardByte/Sunshine/releases/latest" | jq -r '.assets[].browser_download_url' | grep -i "macos-arm64.dmg")
+  else
+    local dmg_url
+    dmg_url=$(curl -s "https://api.github.com/repos/LizardByte/Sunshine/releases/latest" | jq -r '.assets[].browser_download_url' | grep -i "macos-x86_64.dmg")
+  fi
+
+  if [[ -z "$dmg_url" ]]; then
+    echo "Error: Could not find a Sunshine release for macOS architecture: $arch"
+    exit 1
+  fi
+
+  local tmp_dir
+  tmp_dir=$(mktemp -d)
+  local dmg_path="$tmp_dir/sunshine.dmg"
+
+  echo "Downloading $dmg_url..."
+  curl -sL "$dmg_url" -o "$dmg_path"
+
+  echo "Mounting disk image..."
+  local mount_point
+  mount_point=$(hdiutil attach "$dmg_path" -nobrowse -noverify | grep -o '/Volumes/.*')
+
+  echo "Copying Sunshine.app to /Applications/..."
+  sudo cp -a "$mount_point/Sunshine.app" "/Applications/"
+
+  echo "Unmounting and cleaning up..."
+  hdiutil detach "$mount_point" -force
+  rm -rf "$tmp_dir"
+
+  echo "✓ sunshine installed successfully"
+}
+
 write_launcher_script() {
   local launcher="/usr/local/bin/launch-pokerogue-mac.sh"
   local chrome_bin="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
@@ -238,8 +281,12 @@ main() {
   ensure_formula shellcheck
 
   # Browser + streaming host
-  ensure_cask google-chrome
-  ensure_cask sunshine
+  if [[ -d "/Applications/Google Chrome.app" ]] || [[ -d "$HOME/Applications/Google Chrome.app" ]]; then
+    echo "✓ google-chrome already installed (app bundle exists)"
+  else
+    ensure_cask google-chrome
+  fi
+  install_sunshine_mac
 
   # Optional Chromium fallback
   ensure_formula chromium || true
