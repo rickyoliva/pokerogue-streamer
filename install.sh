@@ -87,6 +87,10 @@ pkill -9 -x sunshine || true
 pkill -9 -x chromium-browser || true
 sleep 1
 
+# Clean up lock files left behind by forceful termination
+rm -f /tmp/.X99-lock
+rm -f /tmp/.X11-unix/X99
+
 # 5. Update and install dependencies
 export DEBIAN_FRONTEND=noninteractive
 apt-get update
